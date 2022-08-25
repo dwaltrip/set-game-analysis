@@ -59,6 +59,8 @@ DECK = build_deck()
 # ---------------------------------------------------------
 
 def is_valid_set(cards):
+  if not len(cards) == 3:
+    raise Exception(f'cards should have length 3, got {len(cards)}')
   c1, c2, c3 = cards
 
   for attr_name in attr_names:
@@ -82,20 +84,34 @@ def is_valid_set(cards):
 def draw_N_cards(deck, N):
   return random.sample(deck, N)
 
+def monte_carlo_for_chance_of_at_least_1_set(num_cards, num_trials):
+  success_count = 0
 
-bunch_of_cards = [
-  draw_N_cards(DECK, 3)
-  for _ in range(30)
-]
+  for _ in range(num_trials):
+    cards = draw_N_cards(DECK, num_cards)
 
-for cards in bunch_of_cards:
-  is_set = is_valid_set(cards)
-  if is_set:
-    print('------------')
-    for card in cards:
-        print(get_value_names(card))
+    for candidate in itertools.combinations(cards, 3):
+      if is_valid_set(candidate):
+        success_count += 1
+        break
+
+  return success_count / num_trials
 
 # ---------------------------------------------------------
 
-def monte_carlo_for_chance_of_at_least_1_set(num_cards, num_trials):
-  print('TODO: implement me...')
+if __name__ == '__main__':
+  NUM_TRIALS = 10**3
+
+
+  print('Number of trials:', NUM_TRIALS)
+  print('Monte carlo simulation of odds to get at least one set out of N cards')
+  print()
+  print(f'Num cards  \t|  Probability')
+  print(f'-------------------------------')
+
+  for num_cards in range(3, 13):
+      chance = monte_carlo_for_chance_of_at_least_1_set(num_cards, NUM_TRIALS)
+      print(f'{num_cards}\t\t|  {chance:.3f}')
+
+  print()
+
