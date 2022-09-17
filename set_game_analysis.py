@@ -81,14 +81,24 @@ def is_valid_set(cards):
   return True
 
 
-def draw_N_cards(deck, N):
+def sample_N_cards(deck, N):
   return random.sample(deck, N)
+
+def draw_N_cards(deck, N):
+  if len(deck) < N:
+    raise ValueError(f'There are less than {N} cards.')
+  if N <= 0:
+    raise ValueError(f'Invalid number {N} of cards to draw')
+
+  cards = deck[-N:]
+  del deck[-N:]
+  return cards
 
 def monte_carlo_for_chance_of_at_least_1_set(num_cards, num_trials):
   success_count = 0
 
   for _ in range(num_trials):
-    cards = draw_N_cards(DECK, num_cards)
+    cards = sample_N_cards(DECK, num_cards)
 
     for candidate in itertools.combinations(cards, 3):
       if is_valid_set(candidate):
@@ -96,6 +106,59 @@ def monte_carlo_for_chance_of_at_least_1_set(num_cards, num_trials):
         break
 
   return success_count / num_trials
+
+SET_SIZE = 3
+
+def monte_carlo_for_chance_of_at_least_1_set_V2(hand_size, num_games):
+  success_count = 0
+  num_trials = 0
+
+  for _ in range(num_games):
+    deck = DECK[:]
+    random.shuffle(deck)
+
+    current_game_is_done = False
+    hand = draw_N_cards(deck, hand_size)
+
+    def remove_from_hand(cards):
+      for card in cards:
+        hand.remove(card)
+
+    def add_more_cards_if_set_not_found():
+      # TODO: Can this ever fail?
+      # I think the number of cards remaining in the deck is always a multiple
+      # of 3 (SET_SIZE). So it should be fine.
+      hand.extend(draw_N_cards(deck, SET_SIZE))
+
+    while not current_game_is_done:
+      did_find_set = False
+
+      is_valid_trial = False
+
+      if len(hand) == hand_size:
+        is_valid_trial = True
+        num_trials += 1
+
+      for candidate_set in itertools.combinations(hand, SET_SIZE):
+        if is_valid_set(candidate_set):
+          if is_valid_trial:
+            success_count += 1
+          did_find_set = True
+          remove_from_hand(candidate_set)
+          break
+
+      if not did_find_set:
+        if len(deck) == 0:
+          current_game_is_done = True
+        else:
+          add_more_cards_if_set_not_found()
+
+  print('#### Games:', num_games)
+  print('#### Trials:', num_trials)
+  print('#### Sucesses:', success_count)
+  print('#### Percent:', success_count / num_trials)
+  return success_count / num_trials
+
 
 # ---------------------------------------------------------
 
@@ -109,9 +172,12 @@ if __name__ == '__main__':
   print(f'Num cards  \t|  Probability')
   print(f'-------------------------------')
 
-  for num_cards in range(3, 13):
-      chance = monte_carlo_for_chance_of_at_least_1_set(num_cards, NUM_TRIALS)
-      print(f'{num_cards}\t\t|  {chance:.3f}')
+  # for num_cards in range(3, 13):
+  #     chance = monte_carlo_for_chance_of_at_least_1_set(num_cards, NUM_TRIALS)
+  #     print(f'{num_cards}\t\t|  {chance:.3f}')
+
+  chance = monte_carlo_for_chance_of_at_least_1_set_V2(12, 100)
+  print(f'{chance:.3f}')
 
   print()
 
